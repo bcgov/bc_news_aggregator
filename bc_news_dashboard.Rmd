@@ -1,0 +1,72 @@
+---
+title: "BC News Search"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(DT)
+library(here)
+library(conflicted)
+conflicts_prefer(dplyr::filter)
+projects_bc <- read_rds(here("data","scraped.rds"))
+```
+
+Inputs {.sidebar}
+-------------------------------------
+
+* Enter a single search term to see all articles that contain that term.
+* Enter | to see all the articles scraped thus far.
+* For multiple terms separate terms with |
+
+
+```{r}
+textInput("search_term", "Enter a search term:", "", width = "100%")
+#reactive elements-----------------------
+filtered <- reactive({
+  req(input$search_term)
+  projects_bc|>
+    filter(str_detect(item_title, regex(input$search_term, ignore_case = TRUE)))|>
+    mutate(item_title = paste0("<a href='", item_link, "' target='_blank'>", item_title, "</a>"),
+    key_details = map_chr(key_details,~ paste(unique(.x), collapse = "<br>")),
+    Date=format(item_pub_date, "%Y-%m-%d")
+    ) |>
+    select(
+      Feed =feed,
+      Title = item_title,
+      Date,
+      Details = key_details
+    )
+})
+```
+    
+
+Column
+-------------------------------------
+    
+### Results
+
+```{r}
+renderDT({
+  req(filtered())
+  filtered()|>
+    datatable(
+      options = list(
+    pageLength = 10,
+    autoWidth = TRUE,
+    columnDefs = list(
+      list(width = '6%', targets = 0),  # first column
+      list(width = '10%', targets = 1),  # first column
+      list(width = '6%', targets = 2),  # second column
+      list(width = '78%', targets = 3)   # third column
+    )
+  ),
+  escape = FALSE,
+  rownames = FALSE
+    )
+})
+```
