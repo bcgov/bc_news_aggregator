@@ -64,10 +64,14 @@ if(file.exists(here("data","scraped.rds"))){
 }
 #avoid adding duplicates------------------------
 to_append <- anti_join(projects_bc, previous, by = c("item_title", "item_pub_date"))
-#write both previous and new articles to disk
-previous|>
-  filter(!is.na(item_title))|> #filter out the empty table from first run of script.
-  bind_rows(to_append)|>
-  write_rds(here::here("data", "scraped.rds"))
+
+if(nrow(to_append)>0){
+  #write both previous and new articles to disk
+  previous|>
+    filter(!is.na(item_title))|> #filter out the empty table from first run of script.
+    bind_rows(to_append)|>
+    write_rds(here::here("data", "scraped.rds"))
+  rsconnect::deployDoc("bc_news_dashboard.Rmd", forceUpdate =TRUE)
+}
 
 

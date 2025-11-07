@@ -1,19 +1,57 @@
 ---
 title: "BC News Search"
-output: 
+date: "`r paste('Updated on',format(Sys.Date(), '%B %d, %Y'))`"
+output:
   flexdashboard::flex_dashboard:
     orientation: rows
     vertical_layout: fill
+    source_code: "https://github.com/bcgov/bc_news_aggregator"
 runtime: shiny
+resource_files:
+- data/scraped.rds
 ---
 
 ```{r setup, include=FALSE}
-library(tidyverse)
+#libraries------------------------------------------------
+library(dplyr)
 library(DT)
 library(here)
 library(conflicted)
 conflicts_prefer(dplyr::filter)
+
+#functions-----------------------------------
+
+my_dt <- function(tbbl) {
+  DT::datatable(tbbl,
+    filter = 'top',
+    extensions = "Buttons",
+    rownames = FALSE,
+    escape = FALSE,
+    options = list(
+      pageLength = -1,
+    autoWidth = TRUE,
+    columnDefs = list(
+      list(width = '6%', targets = 0),  # first column
+      list(width = '10%', targets = 1),  # first column
+      list(width = '6%', targets = 2),  # second column
+      list(width = '78%', targets = 3)   # third column
+    ),
+    scrollX = TRUE,
+    scrollY = TRUE,
+    searching = TRUE,
+    ordering = TRUE,
+    dom = "Btip",
+    buttons = list(
+      list(extend = "csv", filename = "news"),
+      list(extend = "excel", filename = "news"))
+    )
+  )
+}
+
+#read in the data-----------------------------
+
 projects_bc <- read_rds(here("data","scraped.rds"))
+
 ```
 
 Inputs {.sidebar}
@@ -25,8 +63,12 @@ Inputs {.sidebar}
 
 
 ```{r}
+#inputs----------------------------------
+
 textInput("search_term", "Enter a search term:", "", width = "100%")
+
 #reactive elements-----------------------
+
 filtered <- reactive({
   req(input$search_term)
   projects_bc|>
@@ -54,19 +96,6 @@ Column
 renderDT({
   req(filtered())
   filtered()|>
-    datatable(
-      options = list(
-    pageLength = 10,
-    autoWidth = TRUE,
-    columnDefs = list(
-      list(width = '6%', targets = 0),  # first column
-      list(width = '10%', targets = 1),  # first column
-      list(width = '6%', targets = 2),  # second column
-      list(width = '78%', targets = 3)   # third column
-    )
-  ),
-  escape = FALSE,
-  rownames = FALSE
-    )
+    my_dt()
 })
 ```
