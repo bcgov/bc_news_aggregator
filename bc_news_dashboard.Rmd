@@ -16,14 +16,15 @@ resource_files:
 library(dplyr)
 library(DT)
 library(here)
+library(readr)
+library(stringr)
+library(purrr)
 library(conflicted)
 conflicts_prefer(dplyr::filter)
 
 #functions-----------------------------------
-
 my_dt <- function(tbbl) {
   DT::datatable(tbbl,
-    filter = 'top',
     extensions = "Buttons",
     rownames = FALSE,
     escape = FALSE,
@@ -49,7 +50,6 @@ my_dt <- function(tbbl) {
 }
 
 #read in the data-----------------------------
-
 projects_bc <- read_rds(here("data","scraped.rds"))
 
 ```
@@ -64,11 +64,9 @@ Inputs {.sidebar}
 
 ```{r}
 #inputs----------------------------------
-
 textInput("search_term", "Enter a search term:", "", width = "100%")
 
 #reactive elements-----------------------
-
 filtered <- reactive({
   req(input$search_term)
   projects_bc|>
@@ -86,7 +84,6 @@ filtered <- reactive({
 })
 ```
     
-
 Column
 -------------------------------------
     
