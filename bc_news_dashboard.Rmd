@@ -1,6 +1,6 @@
 ---
 title: "BC News Search"
-date: "`r paste('Updated on',format(Sys.Date(), '%B %d, %Y'))`"
+date: "`r paste('Updated',format(Sys.time()-lubridate::hours(8), '%Y/%m/%d %H:%M'))`"
 output:
   flexdashboard::flex_dashboard:
     orientation: rows
