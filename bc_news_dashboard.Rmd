@@ -1,12 +1,11 @@
 ---
 title: "BC News Search"
-date: "`r paste('Updated',format(Sys.time()-lubridate::hours(8), '%Y/%m/%d %H:%M'))`"
+date: "`r paste('Updated',format(Sys.time(), '%Y/%m/%d %H:%M'))`"
 output:
   flexdashboard::flex_dashboard:
     orientation: rows
     vertical_layout: fill
     source_code: "https://github.com/bcgov/bc_news_aggregator"
-runtime: shiny
 resource_files:
 - data/scraped.rds
 ---
@@ -25,6 +24,7 @@ conflicts_prefer(dplyr::filter)
 #functions-----------------------------------
 my_dt <- function(tbbl) {
   DT::datatable(tbbl,
+    filter = 'top',
     extensions = "Buttons",
     rownames = FALSE,
     escape = FALSE,
@@ -33,9 +33,9 @@ my_dt <- function(tbbl) {
     autoWidth = TRUE,
     columnDefs = list(
       list(width = '6%', targets = 0),  # first column
-      list(width = '10%', targets = 1),  # first column
+      list(width = '82%', targets = 1),  # first column
       list(width = '6%', targets = 2),  # second column
-      list(width = '78%', targets = 3)   # third column
+      list(width = '6%', targets = 3)   # third column
     ),
     scrollX = TRUE,
     scrollY = TRUE,
@@ -51,48 +51,17 @@ my_dt <- function(tbbl) {
 
 #read in the data-----------------------------
 projects_bc <- read_rds(here("data","scraped.rds"))
-
 ```
 
-Inputs {.sidebar}
--------------------------------------
-
-* Enter a single search term to see all articles that contain that term.
-* Enter | to see all the articles scraped thus far.
-* For multiple terms separate terms with |
-
-
-```{r}
-#inputs----------------------------------
-textInput("search_term", "Enter a search term:", "", width = "100%")
-
-#reactive elements-----------------------
-filtered <- reactive({
-  req(input$search_term)
-  projects_bc|>
-    filter(str_detect(item_title, regex(input$search_term, ignore_case = TRUE)))|>
-    mutate(item_title = paste0("<a href='", item_link, "' target='_blank'>", item_title, "</a>"),
-    key_details = map_chr(key_details,~ paste(unique(.x), collapse = "<br>")),
-    Date=format(item_pub_date, "%Y-%m-%d")
-    ) |>
-    select(
-      Feed =feed,
-      Title = item_title,
-      Date,
-      Details = key_details
-    )
-})
-```
-    
 Column
 -------------------------------------
     
 ### Results
 
 ```{r}
-renderDT({
-  req(filtered())
-  filtered()|>
-    my_dt()
-})
+projects_bc|>
+  mutate(link = sprintf('<a href="%s" target="_blank">%s</a>', item_link, item_title),
+         item_pub_date=format(item_pub_date, '%Y/%m/%d'))|>
+  select(link, key_details, item_pub_date, feed)|>
+  my_dt()
 ```
