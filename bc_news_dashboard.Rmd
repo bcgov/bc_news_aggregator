@@ -1,5 +1,5 @@
 ---
-title: "BC News Search"
+title: "BC Major Projects News Aggregator"
 date: "`r paste('Updated',format(Sys.time(), '%Y/%m/%d %H:%M'))`"
 output:
   flexdashboard::flex_dashboard:
@@ -20,7 +20,6 @@ library(stringr)
 library(purrr)
 library(conflicted)
 conflicts_prefer(dplyr::filter)
-
 #functions-----------------------------------
 my_dt <- function(tbbl) {
   DT::datatable(tbbl,
@@ -48,6 +47,12 @@ my_dt <- function(tbbl) {
     )
   )
 }
+list_2_bullets <- function(lst) {
+      x <- as.character(unlist(lst))
+      if (length(x) == 0 || all(is.na(x))) return("")
+      if (length(x) == 1) {x <- unlist(strsplit(x, "(?<=\\.)\\s+", perl = TRUE))}
+      paste0("<ul><li>", paste(x, collapse = "</li><li>"), "</li></ul>")
+}
 
 #read in the data-----------------------------
 projects_bc <- read_rds(here("data","scraped.rds"))
@@ -56,12 +61,15 @@ projects_bc <- read_rds(here("data","scraped.rds"))
 Column
 -------------------------------------
     
-### Results
+### News since `r format(min(projects_bc$item_pub_date),'%Y/%m/%d') `
 
 ```{r}
-projects_bc|>
-  mutate(link = sprintf('<a href="%s" target="_blank">%s</a>', item_link, item_title),
-         item_pub_date=format(item_pub_date, '%Y/%m/%d'))|>
-  select(link, key_details, item_pub_date, feed)|>
+projects_bc |>
+  mutate(
+    link = sprintf('<a href="%s" target="_blank">%s</a>', item_link, item_title),
+    key_details = map(key_details, list_2_bullets),
+    item_pub_date = format(item_pub_date, '%Y/%m/%d')
+  ) |>
+  select(link, key_details, item_pub_date, feed) |>
   my_dt()
 ```
