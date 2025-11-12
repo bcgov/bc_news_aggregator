@@ -1,13 +1,13 @@
 ---
 title: "BC Major Projects News Aggregator"
-date: "`r paste('Updated',format(Sys.time(), '%Y/%m/%d %H:%M'))`"
+date: "`r paste('Updated', format(Sys.time(), '%Y/%m/%d %H:%M'))`"
 output:
   flexdashboard::flex_dashboard:
     orientation: rows
     vertical_layout: fill
     source_code: "https://github.com/bcgov/bc_news_aggregator"
 resource_files:
-- data/scraped.rds
+- scraped.rds
 ---
 
 ```{r setup, include=FALSE}
@@ -21,31 +21,11 @@ library(purrr)
 library(conflicted)
 conflicts_prefer(dplyr::filter)
 #functions-----------------------------------
-my_dt <- function(tbbl) {
-  DT::datatable(tbbl,
-    filter = 'top',
-    extensions = "Buttons",
-    rownames = FALSE,
-    escape = FALSE,
-    options = list(
-      pageLength = -1,
-    autoWidth = TRUE,
-    columnDefs = list(
-      list(width = '6%', targets = 0),  # first column
-      list(width = '82%', targets = 1),  # first column
-      list(width = '6%', targets = 2),  # second column
-      list(width = '6%', targets = 3)   # third column
-    ),
-    scrollX = TRUE,
-    scrollY = TRUE,
-    searching = TRUE,
-    ordering = TRUE,
-    dom = "Btip",
-    buttons = list(
-      list(extend = "csv", filename = "news"),
-      list(extend = "excel", filename = "news"))
-    )
-  )
+clean_html <- function(x) {
+  x <- gsub("[\r\n]", " ", x)
+  x <- gsub('"', "&quot;", x, fixed = TRUE)
+  x <- gsub("'", "&#39;", x, fixed = TRUE)
+  x
 }
 list_2_bullets <- function(lst) {
       x <- as.character(unlist(lst))
@@ -53,23 +33,45 @@ list_2_bullets <- function(lst) {
       if (length(x) == 1) {x <- unlist(strsplit(x, "(?<=\\.)\\s+", perl = TRUE))}
       paste0("<ul><li>", paste(x, collapse = "</li><li>"), "</li></ul>")
 }
-
 #read in the data-----------------------------
-projects_bc <- read_rds(here("data","scraped.rds"))
+projects_bc <- read_rds("scraped.rds")
 ```
 
 Column
 -------------------------------------
     
-### News since `r format(min(projects_bc$item_pub_date),'%Y/%m/%d') `
+### News since `r lubridate::ymd_hms(min(projects_bc$publishedAt))`
 
 ```{r}
 projects_bc |>
   mutate(
-    link = sprintf('<a href="%s" target="_blank">%s</a>', item_link, item_title),
-    key_details = map(key_details, list_2_bullets),
-    item_pub_date = format(item_pub_date, '%Y/%m/%d')
-  ) |>
-  select(link, key_details, item_pub_date, feed) |>
-  my_dt()
+    link = sprintf('<a href="%s" target="_blank">%s</a>', url, title),
+    query = sub("\\s*AND.*", "", query),
+    query = gsub('^"|"$', "", query),     # remove leading/trailing quotes
+    query = gsub('"', '', query),         # remove any remaining quotes inside
+    query = trimws(query),
+    bullets = map_chr(text, list_2_bullets),
+    bullets = clean_html(bullets)
+    )|>
+  ungroup()|>
+  select(query, link, bullets, source, publishedAt)|>
+  datatable(escape=FALSE,
+            rownames=FALSE,
+            extensions = "Buttons",
+            options = list( 
+              dom = "Btip",
+              buttons = list(
+                list(extend = "csv", filename = "news"),
+                list(extend = "excel", filename = "news")),
+              pageLength = -1,
+              autoWidth = TRUE,
+              columnDefs = list(
+                list(width = '6%', targets = 0),
+                list(width = '6%', targets = 1),
+                list(width = '76%', targets = 2), 
+                list(width = '6%', targets = 3), 
+                list(width = '6%', targets = 4)
+                )
+            )
+  )
 ```
