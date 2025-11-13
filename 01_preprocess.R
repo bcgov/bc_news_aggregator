@@ -8,11 +8,11 @@ library(here)
 #Free teer of https://newsapi.org/ only allows 100 queries... get a bunch of keys for development
 #api_key <- "5b6bbdb71cee445482b86c36349a0776" #rich.p.martin
 #api_key <- "8163843a603d4703b5e8c6a38a6040ee" #richard.martin@gov.bc.ca
-#api_key <- "c7e22e0d769342c2a7503d2f90480795" #psfs.forecast.coop@gmail.com
-api_key <- "63ce890f43384082b0fed1c8b3256d78" #sophia
-
+api_key <- "c7e22e0d769342c2a7503d2f90480795" #psfs.forecast.coop@gmail.com
+#api_key <- "63ce890f43384082b0fed1c8b3256d78" #sophia
 
 blacklist_sources=c("Biztoc.com")
+stopwords <- c("forum","comments","email","journalist","accessible","captioning","diversity","opinions")
 regions <- c('"British Columbia"', '"B.C."', '"BC"')
 
 search_for <- readxl::read_excel(here("data","mpi_dataset_q1_2025.xlsx"), sheet = "mpi_dataset_q1_2025")|>
@@ -20,8 +20,6 @@ search_for <- readxl::read_excel(here("data","mpi_dataset_q1_2025.xlsx"), sheet 
   select(PROJECT_NAME)|>
   mutate(query = paste0('"', PROJECT_NAME, '" AND (', paste(regions, collapse = " OR "), ')'))|>
   select(query)
-
-#search_for <- tibble(query=sample(search_for$query, size=10)) #for testing, comment out once script working
 
 #functions------------------------
 get_article_text <- function(url) {
@@ -55,8 +53,12 @@ get_article_text <- function(url) {
   }, error = function(e) NA)
 }
 
-extract_sentences <- function(text) {
+extract_sentences <- function(text, stopwords) {
   sentences <- str_split(text, "(?<=[.!?])\\s+", simplify = FALSE)[[1]]
+  trimmed <- str_trim(sentences)  # remove leading/trailing spaces
+  long <- trimmed[str_count(trimmed, "\\S+") > 10] #ignore short sentences
+  pattern <- paste0("\\b(", paste(stopwords, collapse = "|"), ")\\b") #filter out stopwords
+  long[!str_detect(str_to_lower(long), pattern)]
 }
 normalize_text <- function(x) {
   x %>%
@@ -133,7 +135,7 @@ previously_scraped <- read_rds("scraped.rds")
 
 new_scrape <- anti_join(possibly_already_scraped, previously_scraped, by="url")|>
   mutate(text=map(url, get_article_text),
-         text=map(text, extract_sentences),
+         text=map(text, extract_sentences, stopwords),
          text = lapply(text, unlist)) %>%
   ungroup()|>
   subset(lengths(text) > 0)|>
@@ -142,10 +144,17 @@ new_scrape <- anti_join(possibly_already_scraped, previously_scraped, by="url")|
  if(nrow(new_scrape)>0){
    bind_rows(previously_scraped, new_scrape)|>
      write_rds("scraped.rds")
-   rsconnect::deployDoc("bc_news_dashboard.Rmd", forceUpdate =TRUE)
- }
+   rmarkdown::render("bc_news_dashboard.Rmd", output_format = "html_document")
+   result <- markdown::rpubsUpload(
+     title = "News Aggregator",
+     htmlFile = "bc_news_dashboard.html",
+     id = "1366125"
+   )
+  }
 
-#write_rds(previously_scraped, "scraped.rds")
+previously_scraped|>
+  filter(source=="rich")|>
+  write_rds("scraped.rds")
 
 
 
