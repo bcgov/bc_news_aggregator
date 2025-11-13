@@ -59,19 +59,33 @@ projects_bc |>
             rownames=FALSE,
             extensions = "Buttons",
             options = list( 
-              dom = "Btip",
-              buttons = list(
-                list(extend = "csv", filename = "news"),
-                list(extend = "excel", filename = "news")),
-              pageLength = -1,
-              autoWidth = TRUE,
-              columnDefs = list(
-                list(width = '6%', targets = 0),
-                list(width = '6%', targets = 1),
-                list(width = '76%', targets = 2), 
-                list(width = '6%', targets = 3), 
-                list(width = '6%', targets = 4)
-                )
-            )
+              initComplete = JS(
+      "function(settings, json) {",
+      "  var column = this.api().column(0);",  # 0-indexed: 0=Name, 1=Age, 2=City
+      "  var select = $('<select><option value=\"\"></option></select>')",
+      "    .appendTo($(column.header()).empty())",
+      "    .on('change', function() {",
+      "      var val = $.fn.dataTable.util.escapeRegex($(this).val());",
+      "      column.search(val ? '^'+val+'$' : '', true, false).draw();",
+      "    });",
+      "  column.data().unique().sort().each(function(d, j) {",
+      "    select.append('<option value=\"'+d+'\">'+d+'</option>')",
+      "  });",
+      "}"
+    ),
+    dom = "Btip",
+    buttons = list(
+      list(extend = "csv", filename = "news"),
+      list(extend = "excel", filename = "news")),
+    pageLength = -1,
+    autoWidth = TRUE,
+    columnDefs = list(
+      list(width = '6%', targets = 0),
+      list(width = '6%', targets = 1),
+      list(width = '76%', targets = 2), 
+      list(width = '6%', targets = 3), 
+      list(width = '6%', targets = 4)
+      )
+  )
   )
 ```
