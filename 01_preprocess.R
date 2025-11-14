@@ -144,10 +144,6 @@ new_scrape <- anti_join(possibly_already_scraped, previously_scraped, by="url")|
  if(nrow(new_scrape)>0){
    bind_rows(previously_scraped, new_scrape)|>
      write_rds("scraped.rds")
-   rsconnect::deployApp(
-     appDir = "bc_news_dashboard.Rmd",
-     appName = "bc_news_dashboard",
-     account = "richard-martin"
-   )
+   rsconnect::deployDoc("bc_news_dashboard.Rmd",account = "richard-martin")
 }
 
