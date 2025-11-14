@@ -51,17 +51,30 @@ projects_bc |>
     query = gsub('"', '', query),         # remove any remaining quotes inside
     query = trimws(query),
     bullets = map_chr(text, list_2_bullets),
-    bullets = clean_html(bullets)
+    bullets = clean_html(bullets),
+    date=str_extract(publishedAt, ".*(?=T)"),
+    date=lubridate::ymd(date)
     )|>
   ungroup()|>
-  select(query, link, bullets, source, publishedAt)|>
-  datatable(escape=FALSE,
-            rownames=FALSE,
-            extensions = "Buttons",
-            options = list( 
-              initComplete = JS(
+  select(query, link, bullets, source, date)|>
+  datatable(
+  escape = FALSE,
+  rownames = FALSE,
+  extensions = "Buttons",
+  filter = "none",  # important — we are doing custom filtering
+  options = list(
+    dom = '<"date-range">Btip',   # creates area for date inputs
+    pageLength = -1,
+    autoWidth = TRUE,
+
+    # -------------------------------
+    # 1. Add dropdown filter for column 0 (your existing one)
+    # -------------------------------
+    initComplete = JS(
       "function(settings, json) {",
-      "  var column = this.api().column(0);",  # 0-indexed: 0=Name, 1=Age, 2=City
+
+      "  // ---- Dropdown filter on column 0 ----",
+      "  var column = this.api().column(0);",
       "  var select = $('<select><option value=\"\"></option></select>')",
       "    .appendTo($(column.header()).empty())",
       "    .on('change', function() {",
@@ -69,23 +82,108 @@ projects_bc |>
       "      column.search(val ? '^'+val+'$' : '', true, false).draw();",
       "    });",
       "  column.data().unique().sort().each(function(d, j) {",
-      "    select.append('<option value=\"'+d+'\">'+d+'</option>')",
+      "    select.append('<option value=\"'+d+'\">'+d+'</option>');",
       "  });",
+
+      "  // ---- Insert date range inputs ----",
+      "  $('div.date-range').html(",
+      "    '<label>From: <input type=\"date\" id=\"minDate\"></label> ' +",
+      "    '<label>To: <input type=\"date\" id=\"maxDate\"></label>'",
+      "  );",
+
+      "  var table = this.api();",
+
+      "  // Trigger filtering when dates change",
+      "  $('#minDate, #maxDate').on('change', function() { table.draw(); });",
+
       "}"
     ),
-    dom = "Btip",
-    buttons = list(
-      list(extend = "csv", filename = "news"),
-      list(extend = "excel", filename = "news")),
-    pageLength = -1,
-    autoWidth = TRUE,
+
+    # -------------------------------
+    # 2. Column widths
+    # -------------------------------
     columnDefs = list(
       list(width = '6%', targets = 0),
       list(width = '6%', targets = 1),
-      list(width = '76%', targets = 2), 
-      list(width = '6%', targets = 3), 
+      list(width = '76%', targets = 2),
+      list(width = '6%', targets = 3),
       list(width = '6%', targets = 4)
-      )
+    ),
+
+    # -------------------------------
+    # 3. Export buttons
+    # -------------------------------
+    buttons = list(
+      list(extend = "csv", filename = "news"),
+      list(extend = "excel", filename = "news")
+    )
+  ),
+
+  # -------------------------------
+  # 4. The actual date-range filtering logic
+  #    (assumes column 4 contains the date)
+  # -------------------------------
+  callback = JS(
+    "
+    $.fn.dataTable.ext.search.push(
+      function(settings, data, dataIndex) {
+
+        // Extract date text from column 4 (0-indexed)
+        var date = data[4] || '';
+
+        // Inputs from date pickers
+        var min = $('#minDate').val();
+        var max = $('#maxDate').val();
+
+        // If no filter set, accept row
+        if (!min && !max) return true;
+
+        // Compare in YYYY-MM-DD format (lexical comparison works)
+        if (min && date < min) return false;
+        if (max && date > max) return false;
+
+        return true;
+      }
+    );
+    "
   )
-  )
+)
+
+# 
+# 
+# 
+# |>
+#   datatable(escape=FALSE,
+#             rownames=FALSE,
+#             extensions = "Buttons",
+#             options = list( 
+#               initComplete = JS(
+#       "function(settings, json) {",
+#       "  var column = this.api().column(0);",  # 0-indexed: 0=Name, 1=Age, 2=City
+#       "  var select = $('<select><option value=\"\"></option></select>')",
+#       "    .appendTo($(column.header()).empty())",
+#       "    .on('change', function() {",
+#       "      var val = $.fn.dataTable.util.escapeRegex($(this).val());",
+#       "      column.search(val ? '^'+val+'$' : '', true, false).draw();",
+#       "    });",
+#       "  column.data().unique().sort().each(function(d, j) {",
+#       "    select.append('<option value=\"'+d+'\">'+d+'</option>')",
+#       "  });",
+#       "}"
+#     ),
+#     dom = "Btip",
+#     buttons = list(
+#       list(extend = "csv", filename = "news"),
+#       list(extend = "excel", filename = "news")),
+#     pageLength = -1,
+#     autoWidth = TRUE,
+#     columnDefs = list(
+#       list(width = '6%', targets = 0),
+#       list(width = '6%', targets = 1),
+#       list(width = '76%', targets = 2), 
+#       list(width = '6%', targets = 3), 
+#       list(width = '6%', targets = 4)
+#       )
+#   )
+#   )
 ```

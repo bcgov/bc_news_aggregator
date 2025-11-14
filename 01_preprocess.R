@@ -152,9 +152,9 @@ new_scrape <- anti_join(possibly_already_scraped, previously_scraped, by="url")|
    )
   }
 
-previously_scraped|>
-  filter(source=="rich")|>
-  write_rds("scraped.rds")
-
+# previously_scraped|> #to reset previously scraped
+#   filter(source=="rich")|>
+#   write_rds("scraped.rds")
+#
 
 
