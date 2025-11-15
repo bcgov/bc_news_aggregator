@@ -70,6 +70,7 @@ projects_bc |>
     query = gsub('"', '', query),         # remove any remaining quotes inside
     query = trimws(query),
     bullets = map_chr(text, list_2_bullets),
+    bullets = str_replace_all(bullets, "(\\d{1,3}(?:,\\d{3})*(?:\\.\\d+)?)", "<b>\\1</b>"),
     bullets = clean_html(bullets),
     date=str_extract(publishedAt, ".*(?=T)"),
     date=lubridate::ymd(date)
