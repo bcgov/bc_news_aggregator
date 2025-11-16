@@ -1,6 +1,6 @@
 ---
 title: "BC Major Projects News Aggregator"
-date: "`r paste('Updated', format(Sys.time()-lubridate::hours(8), '%Y/%m/%d %H:%M'))`"
+date: "`r paste('Updated:', format(readRDS('last_update.rds'), '%Y/%m/%d %H:%M'))`"
 output:
   flexdashboard::flex_dashboard:
     orientation: rows
