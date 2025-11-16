@@ -142,7 +142,7 @@ new_scrape <- anti_join(possibly_already_scraped, previously_scraped, by="url")|
   filter(!is.na(text))
 
  if(nrow(new_scrape)>0){
-   write_rds(Sys.time()-hours(9), "last_update.rds")
+   write_rds(Sys.time()-hours(8), "last_update.rds")
    bind_rows(previously_scraped, new_scrape)|>
      write_rds("scraped.rds")
    rsconnect::deployDoc("bc_news_dashboard.Rmd", account = "richard-martin")
