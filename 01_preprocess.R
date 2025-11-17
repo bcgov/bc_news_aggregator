@@ -7,9 +7,9 @@ library(here)
 #constants-----------------------
 #Free teer of https://newsapi.org/ only allows 100 queries... get a bunch of keys for development
 #api_key <- "5b6bbdb71cee445482b86c36349a0776" #rich.p.martin
-#api_key <- "8163843a603d4703b5e8c6a38a6040ee" #richard.martin@gov.bc.ca
+api_key <- "8163843a603d4703b5e8c6a38a6040ee" #richard.martin@gov.bc.ca
 #api_key <- "c7e22e0d769342c2a7503d2f90480795" #psfs.forecast.coop@gmail.com
-api_key <- "63ce890f43384082b0fed1c8b3256d78" #sophia
+#api_key <- "63ce890f43384082b0fed1c8b3256d78" #sophia
 
 blacklist_sources=c("Biztoc.com")
 stopwords <- c("forum","comments","email","journalist","accessible","captioning","diversity","opinions")
@@ -142,6 +142,7 @@ new_scrape <- anti_join(possibly_already_scraped, previously_scraped, by="url")|
   filter(!is.na(text))
 
  if(nrow(new_scrape)>0){
+   cat(paste0("updated at ",Sys.time()))
    write_rds(Sys.time()-hours(8), "last_update.rds")
    bind_rows(previously_scraped, new_scrape)|>
      write_rds("scraped.rds")
