@@ -7,17 +7,16 @@ library(here)
 #constants-----------------------
 #Free teer of https://newsapi.org/ only allows 100 queries... get a bunch of keys for development
 #api_key <- "5b6bbdb71cee445482b86c36349a0776" #rich.p.martin
-api_key <- "8163843a603d4703b5e8c6a38a6040ee" #richard.martin@gov.bc.ca
+#api_key <- "8163843a603d4703b5e8c6a38a6040ee" #richard.martin@gov.bc.ca
 #api_key <- "c7e22e0d769342c2a7503d2f90480795" #psfs.forecast.coop@gmail.com
-#api_key <- "63ce890f43384082b0fed1c8b3256d78" #sophia
+api_key <- "63ce890f43384082b0fed1c8b3256d78" #sophia
 
 blacklist_sources=c("Biztoc.com")
 stopwords <- c("forum","comments","email","journalist","accessible","captioning","diversity","opinions")
 regions <- c('"British Columbia"', '"B.C."', '"BC"')
 
-search_for <- readxl::read_excel(here("data","mpi_dataset_q1_2025.xlsx"), sheet = "mpi_dataset_q1_2025")|>
-  filter(ESTIMATED_COST>=1000)|>
-  select(PROJECT_NAME)|>
+search_for <- read_csv(here("data", "projects_tracking.csv"))|>
+  select(PROJECT_NAME=search_name)|>
   mutate(query = paste0('"', PROJECT_NAME, '" AND (', paste(regions, collapse = " OR "), ')'))|>
   select(query)
 
